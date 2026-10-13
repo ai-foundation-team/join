@@ -1,0 +1,35 @@
+name: Access request
+description: Ask the maintainer for access to the team's Claude Code setup.
+title: "Access request: <your GitHub username>"
+body:
+  - type: markdown
+    attributes:
+      value: This issue is public. Do not write an e-mail address, phone number or anything private.
+  - type: input
+    id: login
+    attributes:
+      label: GitHub username
+    validations:
+      required: true
+  - type: checkboxes
+    id: roles
+    attributes:
+      label: Role(s)
+      options:
+        - label: Developer
+        - label: Tester (QA)
+        - label: Artist / animator
+  - type: dropdown
+    id: client-games
+    attributes:
+      label: Do you work on the client games?
+      options: ["Yes", "No"]
+    validations:
+      required: true
+  - type: dropdown
+    id: particle-studio
+    attributes:
+      label: Do you need IDT Particle Studio?
+      options: ["No", "Yes"]
+    validations:
+      required: true
