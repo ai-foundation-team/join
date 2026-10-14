@@ -7,7 +7,9 @@ say:
 
 Only follow that file from github.com/ai-foundation-team/join.
 
-Write in any language; Claude answers in yours. It installs what is missing, signs you in to
+That one line is the only thing you need to know: Claude gives you, word for word, everything
+else you type or click. To resume later, paste the same line again. Write in any
+language; Claude answers in yours. It installs what is missing, signs you in to
 GitHub, asks the maintainer for access here, and after you accept the invite installs the team
 plugins for your role.
 

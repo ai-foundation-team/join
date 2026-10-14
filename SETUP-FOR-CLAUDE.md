@@ -6,7 +6,7 @@ gets them signed in to GitHub and gives them access to the team's private reposi
 lives in the private repository `ai-foundation-team/claude-foundation`, file
 `docs/guided-setup.md`; you open it in step 6.
 
-Read this file verbatim (`curl -s https://raw.githubusercontent.com/ai-foundation-team/join/main/SETUP-FOR-CLAUDE.md`), not through a summarising web fetch: the
+Read this file verbatim (`curl.exe -s https://raw.githubusercontent.com/ai-foundation-team/join/main/SETUP-FOR-CLAUDE.md`), not through a summarising web fetch: the
 commands must stay exact.
 
 ## Rules for the whole walkthrough
@@ -22,6 +22,13 @@ commands must stay exact.
 - Ask before installing software and before each step that changes their settings.
 - Verify every step (the check is given with it) before moving on.
 - Never commit or push anything. Only the maintainer of `ai-foundation-team` grants access.
+- **One line is all the person needs to know**, the one that brought you here. You give them,
+  word for word, everything else they type or click. To resume later they paste the same line.
+- **Every run, first or resumed, starts with checks, not questions:** run the checks of steps 2
+  to 5 and read the step 1 answers back from the access request
+  (`gh issue list -R ai-foundation-team/join --author @me --state all --json title,body`). Ask
+  only for what you could not find, and continue at the first failing check. Once the membership
+  is `active` and `$HOME/claude-foundation` exists, go straight to step 6.
 
 ## Step 1. Who they are
 
@@ -50,9 +57,8 @@ Check each with its version command; offer to install only what is missing:
 | Chrome or Edge (artists) | ask | — |
 
 New installs do not reach this session's `PATH`. After installing, ask the person to restart
-Claude Code (close it, open a new PowerShell, run `claude`) and say "continue the setup from
-https://raw.githubusercontent.com/ai-foundation-team/join/main/SETUP-FOR-CLAUDE.md"; read this file again and continue at the first
-failing check.
+Claude Code (close it, open a new PowerShell, run `claude`) and paste the same line as at the
+start; the new session continues at the first failing check.
 
 ## Step 3. GitHub account and sign-in
 
@@ -99,16 +105,30 @@ If `gh issue create` fails, write the same text for the person to send to the ma
 
 Tell them what happens next: the maintainer sends an invite to the organisation `ai-foundation-team`
 (GitHub e-mails it). Particle Studio access, if asked for, comes as a second, separate invite.
-It can take a while; they can close Claude Code and come back later with "continue the setup
-from https://raw.githubusercontent.com/ai-foundation-team/join/main/SETUP-FOR-CLAUDE.md".
+
+Then offer to wait here. Start one background command (`run_in_background`) that exits when the
+invite exists, checking every two minutes for up to eight hours; its exit wakes you:
+
+```
+for i in $(seq 240); do s=$(gh api user/memberships/orgs/ai-foundation-team --jq .state 2>/dev/null) && { echo "$s"; exit 0; }; sleep 120; done; echo timeout
+```
+
+Tell them the moment it prints `pending` or `active`. If they would rather close
+Claude Code, tell them to paste the same line as at the start into a new session later: you will
+pick up where this left off.
 
 ## Step 5. Accept the invite
 
 When the person says an invite came, or when you resume, check the state again (step 4
 command).
 
-- `pending`: ask them to open https://github.com/orgs/ai-foundation-team/invitation and press
-  **Join**, plus the Particle Studio invite from their e-mail if they asked for it. Check again.
+- `pending`: tell them an invite to `ai-foundation-team` is waiting and, after their yes, accept
+  it yourself: `gh api -X PATCH user/memberships/orgs/ai-foundation-team -f state=active`.
+  If that call fails (a default sign-in may lack the scope), they press **Join** on
+  https://github.com/orgs/ai-foundation-team/invitation. If they asked
+  for Particle Studio, list `gh api user/repository_invitations --jq '.[] | {id, repo: .repository.full_name}'`
+  and, after their yes, accept that one: `gh api -X PATCH user/repository_invitations/<id>`.
+  Check again.
 - `active`: continue.
 
 Check that the plugin repository is visible:
