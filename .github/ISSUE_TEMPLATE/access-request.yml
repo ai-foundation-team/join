@@ -26,10 +26,3 @@ body:
       options: ["Yes", "No"]
     validations:
       required: true
-  - type: dropdown
-    id: particle-studio
-    attributes:
-      label: Do you need IDT Particle Studio?
-      options: ["No", "Yes"]
-    validations:
-      required: true
