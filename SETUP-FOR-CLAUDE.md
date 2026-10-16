@@ -36,7 +36,6 @@ Ask, in one message:
 
 1. Role(s): developer, tester (QA), artist / animator. Several are fine, all three too.
 2. Do they work on the client games?
-3. Artists and effect developers: do they need IDT Particle Studio?
 
 Keep the answers; part 2 and the access request use them. **Resuming in a new session** (after
 a restart or after waiting for the invite): read them back from the request with
@@ -96,15 +95,14 @@ Show the person the request, and after their yes create it (GitHub notifies the 
 ```
 gh issue create -R ai-foundation-team/join --title "Access request: <login>" --body "GitHub username: <login>
 Role(s): <roles>
-Client games: <yes/no>
-IDT Particle Studio: <yes/no>"
+Client games: <yes/no>"
 ```
 
 Never put an e-mail address, phone number or anything private into the issue: it is public.
 If `gh issue create` fails, write the same text for the person to send to the maintainer in chat.
 
 Tell them what happens next: the maintainer sends an invite to the organisation `ai-foundation-team`
-(GitHub e-mails it). Particle Studio access, if asked for, comes as a second, separate invite.
+(GitHub e-mails it). Membership also gives read access to IDT Particle Studio: no second invite.
 
 Then offer to wait here. Start one background command (`run_in_background`) that exits when the
 invite exists, checking every two minutes for up to eight hours; its exit wakes you:
@@ -125,10 +123,7 @@ command).
 - `pending`: tell them an invite to `ai-foundation-team` is waiting and, after their yes, accept
   it yourself: `gh api -X PATCH user/memberships/orgs/ai-foundation-team -f state=active`.
   If that call fails (a default sign-in may lack the scope), they press **Join** on
-  https://github.com/orgs/ai-foundation-team/invitation. If they asked
-  for Particle Studio, list `gh api user/repository_invitations --jq '.[] | {id, repo: .repository.full_name}'`
-  and, after their yes, accept that one: `gh api -X PATCH user/repository_invitations/<id>`.
-  Check again.
+  https://github.com/orgs/ai-foundation-team/invitation. Check again.
 - `active`: continue.
 
 Check that the plugin repository is visible:
