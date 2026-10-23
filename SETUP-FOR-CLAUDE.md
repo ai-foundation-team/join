@@ -21,7 +21,7 @@ commands must stay exact.
   give them the exact line to paste, then check the result yourself.
 - Ask before installing software and before each step that changes their settings.
 - Verify every step (the check is given with it) before moving on.
-- Never commit or push anything. Only the maintainer of `ai-foundation-team` grants access.
+- Never commit or push anything. Only the maintainer of `ai-foundation-team` or a team lead on its approver list approves access.
 - **One line is all the person needs to know**, the one that brought you here. You give them,
   word for word, everything else they type or click. To resume later they paste the same line.
 - **Every run, first or resumed, starts with checks, not questions:** run the checks of steps 2
@@ -76,7 +76,7 @@ They copy the one-time code shown there into the browser page and approve. If it
 Check again: `gh auth status` shows "Logged in to github.com". Read their username:
 `gh api user --jq .login`.
 
-## Step 4. Ask the maintainer for access
+## Step 4. Ask for access
 
 Check membership first:
 
@@ -90,7 +90,7 @@ gh api user/memberships/orgs/ai-foundation-team --jq .state
 - `pending`: an invite is waiting; go to step 5.
 - An error (not found): no access yet. File the request below.
 
-Show the person the request, and after their yes create it (GitHub notifies the maintainer):
+Show the person the request, and after their yes create it (GitHub notifies the maintainer and the approvers):
 
 ```
 gh issue create -R ai-foundation-team/join --title "Access request: <login>" --body "GitHub username: <login>
@@ -101,8 +101,10 @@ Client games: <yes/no>"
 Never put an e-mail address, phone number or anything private into the issue: it is public.
 If `gh issue create` fails, write the same text for the person to send to the maintainer in chat.
 
-Tell them what happens next: the maintainer sends an invite to the organisation `ai-foundation-team`
-(GitHub e-mails it). Membership also gives read access to IDT Particle Studio: no second invite.
+Tell them what happens next: the maintainer or a team lead who approves requests labels the issue,
+and an invite to the organisation `ai-foundation-team` follows automatically (GitHub e-mails it).
+Membership gives read access to the team plugins and IDT Particle Studio. Client game data is
+granted separately, by the maintainer only.
 
 Then offer to wait here. Start one background command (`run_in_background`) that exits when the
 invite exists, checking every two minutes for up to eight hours; its exit wakes you:

@@ -1,0 +1,4 @@
+# Who may approve access requests with the label "approved" (one GitHub login per line).
+# Only the organisation owner edits this file. Client data access ("client-approved") stays with the owner.
+DivankovOnseo
+lazerok07work
