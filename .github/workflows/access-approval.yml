@@ -1,0 +1,140 @@
+# Turns an approver's label on an access-request issue into an organisation invitation.
+# Issue text is untrusted: the invitee is always the issue's author, never a name from the text.
+name: Access approval
+
+on:
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: access-approval-${{ github.event.issue.user.id }}
+  cancel-in-progress: false
+
+jobs:
+  approve:
+    if: >-
+      github.event.issue.pull_request == null &&
+      (github.event.label.name == 'approved' || github.event.label.name == 'client-approved')
+    runs-on: ubuntu-latest
+    environment: org-invite
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          ORG_TOKEN: ${{ secrets.ORG_INVITE_TOKEN }}
+        with:
+          script: |
+            const ORG = 'ai-foundation-team';
+            const MEMBERS_TEAM = 'members';
+            const CLIENT_TEAM = 'client-games';
+            const OWNER_LOGIN = 'DivankovOnseo';
+            const { issue, label, sender } = context.payload;
+            const { owner, repo } = context.repo;
+            const num = issue.number;
+            const author = issue.user.login;
+            const authorId = issue.user.id;
+            const by = sender.login;
+
+            const say = (body) => github.rest.issues.createComment({ owner, repo, issue_number: num, body });
+            const unlabel = () => github.rest.issues.removeLabel({ owner, repo, issue_number: num, name: label.name }).catch(() => {});
+
+            if (!process.env.ORG_TOKEN) {
+              await unlabel(); await say('Approvals are not set up yet; nothing was granted.');
+              core.setFailed('ORG_INVITE_TOKEN is not set'); return;
+            }
+            if (!/^[A-Za-z0-9-]{1,39}$/.test(author) || issue.user.type !== 'User') {
+              await unlabel(); await say('This issue was not opened by a personal GitHub account; nothing was done.'); return;
+            }
+            if (!/^Access request/i.test(issue.title)) {
+              await unlabel(); await say('This is not an access request; nothing was done.'); return;
+            }
+
+            const org = getOctokit(process.env.ORG_TOKEN);
+            let granted = false;
+            let cancelled = false;
+            let membersTeamId = null;
+
+            try {
+
+              async function memberState(login) {
+                try {
+                  const { data } = await org.rest.orgs.getMembershipForUser({ org: ORG, username: login });
+                  return data.state; // 'active' or 'pending'
+                } catch (e) {
+                  if (e.status === 404) return 'none';
+                  throw e;
+                }
+              }
+
+              if (label.name === 'approved') {
+                const { data: file } = await github.rest.repos.getContent({
+                  owner, repo, path: '.github/access-approvers.txt', ref: context.payload.repository.default_branch,
+                });
+                const approvers = Buffer.from(file.content, 'base64').toString('utf8')
+                  .split(/\r?\n/).map((l) => l.replace(/#.*/, '').trim().toLowerCase()).filter(Boolean);
+                if (!approvers.includes(by.toLowerCase())) {
+                  await unlabel(); await say(`@${by} is not on the approver list, so this approval was not accepted.`); return;
+                }
+                if (issue.state !== 'open') {
+                  await unlabel(); await say('The request is closed; open a new one to be approved.'); return;
+                }
+                const earlier = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: num, per_page: 100 });
+                if (earlier.some((c) => c.user?.login === 'github-actions[bot]' && c.body.startsWith('Approved by'))) {
+                  await unlabel(); await say('This request was approved once already; a new access request is needed.'); return;
+                }
+                const state = await memberState(author);
+                if (state !== 'none') {
+                  await say(`@${author} is already ${state === 'active' ? 'a member' : 'invited (check your e-mail or github.com/' + ORG + ')'}; no new invitation.`);
+                  return;
+                }
+                const { data: team } = await org.rest.teams.getByName({ org: ORG, team_slug: MEMBERS_TEAM });
+                await org.rest.orgs.createInvitation({ org: ORG, invitee_id: authorId, role: 'direct_member', team_ids: [team.id] });
+                granted = true;
+                await say(`Approved by @${by}. @${author}, an invitation to ${ORG} is on its way (GitHub e-mails it). ` +
+                  `Access to client data is granted separately by the owner. cc @${OWNER_LOGIN}`);
+                await github.rest.issues.update({ owner, repo, issue_number: num, state: 'closed', state_reason: 'completed' });
+                return;
+              }
+
+              // client-approved: honoured only from an organisation owner.
+              let role = 'none';
+              try { role = (await org.rest.orgs.getMembershipForUser({ org: ORG, username: by })).data.role; } catch (e) { if (e.status !== 404) throw e; }
+              if (role !== 'admin') {
+                await unlabel(); await say(`Only the organisation owner grants access to client data; @${by}'s label was removed.`); return;
+              }
+              const authorState = await memberState(author);
+              if (authorState === 'none') {
+                await unlabel(); await say(`@${author} has no membership or invitation yet; approve the request first.`); return;
+              }
+              if (authorState === 'pending') {
+                // A pending invitation is replaced by one that carries both teams.
+                const pending = await org.paginate(org.rest.orgs.listPendingInvitations, { org: ORG, per_page: 100 });
+                const inv = pending.find((i) => i.login && i.login.toLowerCase() === author.toLowerCase());
+                const { data: members } = await org.rest.teams.getByName({ org: ORG, team_slug: MEMBERS_TEAM });
+                const { data: client } = await org.rest.teams.getByName({ org: ORG, team_slug: CLIENT_TEAM });
+                membersTeamId = members.id;
+                if (inv) { await org.rest.orgs.cancelInvitation({ org: ORG, invitation_id: inv.id }); cancelled = true; }
+                await org.rest.orgs.createInvitation({ org: ORG, invitee_id: authorId, role: 'direct_member', team_ids: [members.id, client.id] });
+                cancelled = false;
+              } else {
+                await org.rest.teams.addOrUpdateMembershipForUserInOrg({ org: ORG, team_slug: CLIENT_TEAM, username: author, role: 'member' });
+              }
+              granted = true;
+              await say(`Client data access granted to @${author} by @${by}. cc @${OWNER_LOGIN}`);
+            } catch (e) {
+              if (cancelled) {
+                // The earlier members-only invitation was cancelled; put it back.
+                try {
+                  await org.rest.orgs.createInvitation({ org: ORG, invitee_id: authorId, role: 'direct_member', team_ids: [membersTeamId] });
+                } catch { /* the failed run below tells the owner */ }
+              }
+              if (granted) {
+                await say(`The grant went through, but a later step failed (HTTP ${e.status ?? '?'}). @${OWNER_LOGIN} will see the failed run.`).catch(() => {});
+              } else {
+                await unlabel();
+                await say(`Something went wrong (HTTP ${e.status ?? '?'}); nothing was granted. @${OWNER_LOGIN} will see the failed run.`).catch(() => {});
+              }
+              core.setFailed(`HTTP ${e.status ?? '?'}`);
+            }
