@@ -6,7 +6,7 @@ gets them signed in to GitHub and gives them access to the team's private reposi
 lives in the private repository `ai-foundation-team/claude-foundation`, file
 `docs/guided-setup.md`; you open it in step 6.
 
-Read this file verbatim (`curl.exe -s https://raw.githubusercontent.com/ai-foundation-team/join/main/SETUP-FOR-CLAUDE.md`), not through a summarising web fetch: the
+Read this file verbatim (`curl.exe -s` on Windows, `curl -s` on macOS: `https://raw.githubusercontent.com/ai-foundation-team/join/main/SETUP-FOR-CLAUDE.md`), not through a summarising web fetch: the
 commands must stay exact.
 
 ## Rules for the whole walkthrough
@@ -17,7 +17,8 @@ commands must stay exact.
   window the person types into, never in this chat. If they paste a secret into the chat anyway,
   tell them to revoke it and create a new one.
 - Run non-interactive commands yourself. A command that waits for typed input runs in a
-  **separate PowerShell window that the person opens** (Start menu → type `PowerShell` → Enter);
+  **separate PowerShell window that the person opens** (Start menu → type `PowerShell` → Enter;
+  on macOS a Terminal window: Spotlight → type `Terminal` → Enter);
   give them the exact line to paste, then check the result yourself.
 - Ask before installing software and before each step that changes their settings.
 - Verify every step (the check is given with it) before moving on.
@@ -42,7 +43,9 @@ a restart or after waiting for the invite): read them back from the request with
 `gh issue list -R ai-foundation-team/join --author @me --state all --json title,body`, or ask
 again.
 
-## Step 2. Software (Windows)
+## Step 2. Software
+
+**On Windows:**
 
 Check each with its version command; offer to install only what is missing:
 
@@ -58,6 +61,19 @@ Check each with its version command; offer to install only what is missing:
 New installs do not reach this session's `PATH`. After installing, ask the person to restart
 Claude Code (close it, open a new PowerShell, run `claude`) and paste the same line as at the
 start; the new session continues at the first failing check.
+
+**On macOS** (interim, not tested yet: tell the person, and report what fails to the maintainer):
+
+| Need | Check | Install (after their yes) |
+| --- | --- | --- |
+| Homebrew | `brew --version` | the one line from https://brew.sh, in Terminal |
+| Git, GitHub CLI, Node.js 20.19+ | `git --version`, `gh --version`, `node --version` | `brew install git gh node` |
+| Python 3.10+ (developers, QA) | `python3 --version` | `brew install python` |
+| Claude Code 2.1.289+ | `claude --version` | `claude update` |
+| Chrome (artists) | ask | — |
+
+After installing, the person restarts Claude Code from a new Terminal window. Part 2 has a macOS step;
+on a Mac, tracker tokens and IDT Asset Pipeline do not work yet.
 
 ## Step 3. GitHub account and sign-in
 
@@ -138,7 +154,7 @@ Check that the plugin repository is visible:
 gh repo clone ai-foundation-team/claude-foundation "$HOME/claude-foundation"
 ```
 
-(`$HOME` here is the user folder, `%USERPROFILE%`.) If the folder already exists, run
+(`$HOME` here is the user folder: `%USERPROFILE%` on Windows, `/Users/<name>` on macOS.) If the folder already exists, run
 `git -C "$HOME/claude-foundation" pull` instead. Then read
 `$HOME/claude-foundation/docs/guided-setup.md` and follow it from its first step, with the
 answers from step 1 of this file.
