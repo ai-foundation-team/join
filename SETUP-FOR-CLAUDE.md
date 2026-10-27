@@ -62,18 +62,19 @@ New installs do not reach this session's `PATH`. After installing, ask the perso
 Claude Code (close it, open a new PowerShell, run `claude`) and paste the same line as at the
 start; the new session continues at the first failing check.
 
-**On macOS** (interim, not tested yet: tell the person, and report what fails to the maintainer):
+**On macOS** (not tested on a real Mac yet: tell the person, and report what fails to the maintainer):
 
 | Need | Check | Install (after their yes) |
 | --- | --- | --- |
-| Homebrew | `brew --version` | the one line from https://brew.sh, in Terminal |
+| Homebrew | `brew --version` (or `/opt/homebrew/bin/brew --version`: a fresh one is not on `PATH`) | the one line from https://brew.sh, in Terminal, then the `brew shellenv` lines it prints under "Next steps" |
 | Git, GitHub CLI, Node.js 20.19+ | `git --version`, `gh --version`, `node --version` | `brew install git gh node` |
-| Python 3.10+ (developers, QA) | `python3 --version` | `brew install python` |
+| Python 3.10+ (developers, QA) | `xcode-select -p` first (without it `python3` opens an install dialog), then `python3 --version` | `brew install python` |
 | Claude Code 2.1.289+ | `claude --version` | `claude update` |
 | Chrome (artists) | ask | — |
 
-After installing, the person restarts Claude Code from a new Terminal window. Part 2 has a macOS step;
-on a Mac, tracker tokens and IDT Asset Pipeline do not work yet.
+After installing, the person restarts Claude Code from a new Terminal window. In part 2 the setup on a Mac
+runs `bootstrap.sh` (the twin of the Windows `bootstrap.ps1`; it can also install missing Homebrew packages
+when the person runs it in Terminal). On a Mac, tracker tokens and IDT Asset Pipeline do not work yet.
 
 ## Step 3. GitHub account and sign-in
 
